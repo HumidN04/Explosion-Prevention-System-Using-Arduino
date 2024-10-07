@@ -1,0 +1,70 @@
+#include <LiquidCrystal.h>  // Optional for LCD
+
+// Define sensor pins
+const int gasSensor = A0;
+const int flameSensor = 2;
+const int tempSensor = A1;
+
+// Define output pins
+const int buzzer = 8;
+const int ledRed = 7;
+const int ledGreen = 6;
+const int relay = 5;
+
+// Variables
+int gasThreshold = 400;  // Threshold for gas level
+int tempThreshold = 50;  // Temperature threshold (in Celsius)
+
+void setup() {
+  pinMode(gasSensor, INPUT);
+  pinMode(flameSensor, INPUT);
+  pinMode(tempSensor, INPUT);
+  pinMode(buzzer, OUTPUT);
+  pinMode(ledRed, OUTPUT);
+  pinMode(ledGreen, OUTPUT);
+  pinMode(relay, OUTPUT);
+
+  digitalWrite(ledGreen, HIGH);  // Safe status at start
+  Serial.begin(9600);
+}
+
+void loop() {
+  int gasLevel = analogRead(gasSensor);
+  int flameStatus = digitalRead(flameSensor);
+  int tempReading = analogRead(tempSensor);
+  float temperature = (tempReading * 5.0 * 100.0) / 1024.0;  // Convert analog to Celsius
+  
+  // Check for gas leak
+  if (gasLevel > gasThreshold) {
+    activateAlarm("Gas Leak Detected!");
+  }
+  
+  // Check for flame
+  if (flameStatus == HIGH) {
+    activateAlarm("Flame Detected!");
+  }
+  
+  // Check for overheating
+  if (temperature > tempThreshold) {
+    activateAlarm("Overheating Detected!");
+  }
+  
+  // Safe condition
+  if (gasLevel <= gasThreshold && flameStatus == LOW && temperature <= tempThreshold) {
+    digitalWrite(buzzer, LOW);
+    digitalWrite(ledRed, LOW);
+    digitalWrite(ledGreen, HIGH);
+    digitalWrite(relay, HIGH);  // Keep systems running
+    Serial.println("System Status: Safe");
+  }
+
+  delay(1000);  // Check every second
+}
+
+void activateAlarm(String warning) {
+  digitalWrite(buzzer, HIGH);
+  digitalWrite(ledRed, HIGH);
+  digitalWrite(ledGreen, LOW);
+  digitalWrite(relay, LOW);  // Shutdown equipment
+  Serial.println(warning);
+}
